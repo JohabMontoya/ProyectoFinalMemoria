@@ -19,13 +19,7 @@ public Carta(int valor, Palo palo) {
     public Palo getPalo() {
         return palo;
     }
-    public boolean esPar() {
-        boolean respuesta = false;
-        if (valor%2 == 0) {
-            respuesta = true;
-        }
-        return respuesta;
-    }
+
     public String toString() {
         String laCarta;
         switch (valor) {
