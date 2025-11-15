@@ -1,6 +1,6 @@
 package ClasesMemoria;
 
-public class Carta {
+public class Carta implements Comparable<Carta> {
     int valor;
     Palo palo;
     boolean estaVolteada;
@@ -12,6 +12,44 @@ public Carta(int valor, Palo palo) {
     estaVolteada = false;
     estaEmparejada = false;
 }
-
-
+    // getters/setters
+    public int getValor() {
+        return valor;
+    }
+    public Palo getPalo() {
+        return palo;
+    }
+    public boolean esPar() {
+        boolean respuesta = false;
+        if (valor%2 == 0) {
+            respuesta = true;
+        }
+        return respuesta;
+    }
+    public String toString() {
+        String laCarta;
+        switch (valor) {
+            case 1:
+                laCarta = "A";
+                break;
+            case 11:
+                laCarta = "J";
+                break;
+            case 12:
+                laCarta = "Q";
+                break;
+            case 13:
+                laCarta = "K";
+                break;
+            default:
+                laCarta = "" + valor;
+                break;
+        }
+        laCarta = laCarta + palo.getFigura();
+        return laCarta;
+    }
+    @Override
+    public int compareTo(Carta o) {
+        return 0;
+    }
 }
