@@ -6,12 +6,12 @@ public class Carta implements Comparable<Carta> {
     boolean estaVolteada;
     boolean estaEmparejada;
 
-public Carta(int valor, Palo palo) {
-    this.valor = valor;
-    this.palo = palo;
-    estaVolteada = false;
-    estaEmparejada = false;
-}
+    public Carta(int valor, Palo palo) {
+        this.valor = valor;
+        this.palo = palo;
+        estaVolteada = false;
+        estaEmparejada = false;
+    }
     // getters/setters
     public int getValor() {
         return valor;
@@ -42,8 +42,13 @@ public Carta(int valor, Palo palo) {
         laCarta = laCarta + palo.getFigura();
         return laCarta;
     }
+
     @Override
     public int compareTo(Carta o) {
-        return 0;
+        if (o == null) return 1;
+        // Orden natural: por valor primero, si empate por peso del palo
+        int cmp = Integer.compare(this.valor, o.valor);
+        if (cmp != 0) return cmp;
+        return Integer.compare(this.palo.getPeso(), o.palo.getPeso());
     }
 }
