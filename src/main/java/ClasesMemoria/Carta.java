@@ -47,8 +47,8 @@ public class Carta implements Comparable<Carta> {
     public int compareTo(Carta o) {
         if (o == null) return 1;
         // Orden natural: por valor primero, si empate por peso del palo
-        int cmp = Integer.compare(this.valor, o.valor);
-        if (cmp != 0) return cmp;
+        int comparar = Integer.compare(this.valor, o.valor);
+        if (comparar != 0) return comparar;
         return Integer.compare(this.palo.getPeso(), o.palo.getPeso());
     }
 }
