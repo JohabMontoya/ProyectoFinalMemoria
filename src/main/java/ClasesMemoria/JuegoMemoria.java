@@ -17,6 +17,12 @@ public abstract class JuegoMemoria {
 
     // Crea el juego con una lista de jugadores y un tablero ya construido.
     public JuegoMemoria(List<Jugador> jugadores, Tablero tablero) {
+        if (jugadores == null || jugadores.isEmpty()) {
+            throw new IllegalArgumentException("Se requiere al menos un jugador");
+        }
+        if (tablero == null) {
+            throw new IllegalArgumentException("Tablero no puede ser null");
+        }
         this.jugadores = new ArrayList<>(jugadores);
         this.tablero = tablero;
         this.casillasVolteadas = new ArrayList<>(2);
