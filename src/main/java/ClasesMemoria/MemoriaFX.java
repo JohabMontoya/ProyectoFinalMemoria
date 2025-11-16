@@ -578,7 +578,7 @@ public class MemoriaFX extends Application {
         } catch (Exception ex) {
             System.out.println("[MemoriaFX] Error cargando con ClassLoader: " + ex.getMessage());
         }
-S
+
         imageCache.put(fileName, null);
         System.out.println("[MemoriaFX] No se encontró imagen: " + fileName);
         return null;
