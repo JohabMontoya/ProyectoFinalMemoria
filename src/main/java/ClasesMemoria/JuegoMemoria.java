@@ -27,7 +27,7 @@ public abstract class JuegoMemoria {
     // Regla abstracta que define si dos cartas constituyen un par según la modalidad concreta.
     // Subclases deben implementar esta función (por ejemplo: mismo valor; mismo valor y mismo color).
 
-    protected abstract boolean esPar(Carta a, Carta b);
+    protected abstract boolean esPar(Casilla c1, Casilla c2);
 
     /**
      * Inicializa el estado del juego para comenzar a jugar:
@@ -55,7 +55,7 @@ public abstract class JuegoMemoria {
     /**
      * Intenta voltear la casilla en la posición (fila, columna).
      *
-     * Reglas simples:
+     * Reglas:
      * - Si la posición no es válida o la casilla ya está emparejada o ya está volteada en este turno,
      *   retorna false y no hace nada.
      * - Si el volteo es válido, la casilla se marca volteada y se agrega a casillasVolteadas.
@@ -81,14 +81,11 @@ public abstract class JuegoMemoria {
             Casilla c1 = casillasVolteadas.get(0);
             Casilla c2 = casillasVolteadas.get(1);
 
-            Carta carta1 = c1.getCarta();
-            Carta carta2 = c2.getCarta();
-
-            if (esPar(carta1, carta2)) {
+            if (esPar(c1, c2)) {
                 // formar par: marcar emparejadas y registrar en jugador
                 c1.marcarComoEmparejada();
                 c2.marcarComoEmparejada();
-                getJugadorActual().registrarPar(carta1, carta2);
+                getJugadorActual().registrarPar(c1.getCarta(), c2.getCarta());
             } else {
                 // no son par: ocultarlas y pasar turno
                 c1.ocultar();
@@ -130,5 +127,41 @@ public abstract class JuegoMemoria {
     // Devuelve el tablero asociado a este juego.
     public Tablero getTablero() {
         return tablero;
+    }
+
+    /**
+     * Devuelve la(s) persona(s) ganadora(s) al finalizar el juego.
+     *
+     * - Ordena a los jugadores usando la lógica de ComparatorGanador (mejor primero).
+     * - Devuelve todos los jugadores que empatan en la primera posición (mismo número de pares
+     *   y misma suma total de valores, según las métricas usadas en ComparatorGanador).
+     *
+     * Regresa la lista con los ganadores o el ganador. Si no hay jugadores, retorna lista vacía.
+     */
+
+    public List<Jugador> obtenerGanadores() {
+        if (jugadores.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Hacer copia para ordenar sin modificar la lista original
+        List<Jugador> copia = new ArrayList<>(jugadores);
+        Collections.sort(copia, new ComparatorGanador());
+
+        // El primer jugador es el mejor según ComparatorGanador
+        Jugador mejor = copia.get(0);
+        int mejorPares = mejor.getNumeroDePares();
+        int mejorSuma = mejor.getSumaTotalDeValores();
+
+        List<Jugador> winners = new ArrayList<>();
+        for (Jugador j : copia) {
+            if (j.getNumeroDePares() == mejorPares && j.getSumaTotalDeValores() == mejorSuma) {
+                winners.add(j);
+            } else {
+                break; // como la lista está ordenada, al encontrar uno distinto podemos terminar
+            }
+        }
+
+        return Collections.unmodifiableList(winners);
     }
 }
