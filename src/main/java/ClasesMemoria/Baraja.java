@@ -3,67 +3,49 @@ package ClasesMemoria;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 public class Baraja {
-    private List<Carta> cartas;
+    private final List<Carta> barajaCompleta;
 
     public Baraja() {
-        this.cartas = new ArrayList<>();
+        this.barajaCompleta = new ArrayList<>();
         inicializar();
-        barajar();
     }
 
     // Construye el mazo
     private void inicializar() {
-        cartas.clear();
+        barajaCompleta.clear();
         for (Palo palo : Palo.values()) {
             for (int v = 1; v <= 13; v++) {
-                cartas.add(new Carta(v, palo));
+                barajaCompleta.add(new Carta(v, palo));
             }
         }
     }
 
-    // Baraja el mazo aleatoriamente
-    public void barajar() {
-        Collections.shuffle(cartas);
-    }
+    public List<Carta> getCartasParaTablero(int tamañoTablero) {
+        int nPares = tamañoTablero / 2;
 
-    // Roba
-    public Carta robar() {
-        if (cartas.isEmpty()) return null;
-        return cartas.remove(cartas.size() - 1);
-    }
+        //Usa una copia y barajarla para seleccionar cartas aleatorias
+        List<Carta> copiaBarajada = new ArrayList<>(barajaCompleta);
+        Collections.shuffle(copiaBarajada);
 
-    // Mira la carta en la posición index
-    public Carta verEn(int index) {
-        if (index < 0 || index >= cartas.size()) return null;
-        return cartas.get(index);
-    }
+        //Toma los primeros N_pares de cartas distintas
+        List<Carta> cartasDistintas = new ArrayList<>();
+        // Usa la lista barajada como fuente para seleccionar N_pares distintos
+        for (Carta carta : copiaBarajada) {
+            if (cartasDistintas.size() < nPares && !cartasDistintas.contains(carta)) {
+                cartasDistintas.add(carta);
+            }
+        }
 
-    // Devuelve la cantidad de cartas restantes
-    public int size() {
-        return cartas.size();
-    }
+        //  Crea los pares duplicando el conjunto de cartas distintas
+        List<Carta> cartasTablero = new ArrayList<>();
+        cartasTablero.addAll(cartasDistintas);
+        cartasTablero.addAll(cartasDistintas); // Duplicado para crear los pares
 
-    // Indica si la baraja está vacía
-    public boolean isEmpty() {
-        return cartas.isEmpty();
-    }
+        // Baraja las cartas finales del tablero antes de entregarlas
+        Collections.shuffle(cartasTablero);
 
-    // Reconstruye y vuelve a barajar la baraja estándar
-    public void reset() {
-        inicializar();
-        barajar();
-    }
-
-    // Devuelve una lista de cartas
-    public List<Carta> getCartas() {
-        return new ArrayList<>(cartas);
-    }
-
-    @Override
-    public String toString() {
-        return "Baraja{cartas=" + cartas.size() + "}";
+        return cartasTablero;
     }
 }

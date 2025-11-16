@@ -21,8 +21,8 @@ public enum Palo {
     public String getFigura() {
         return figura;
     }
-    public String getColor() {
-        return color;
+    public boolean esRojo() {
+        return this.color.equals("rojo");
     }
 
 }
