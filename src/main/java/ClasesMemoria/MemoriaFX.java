@@ -3,6 +3,7 @@ package ClasesMemoria;
 import ClasesMemoria.*;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,11 +16,13 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.util.*;
 
+/**
+ * MemoriaFX - Interfaz JavaFX para jugar al memorama.
+ */
 public class MemoriaFX extends Application {
 
     private JuegoMemoria juego;
@@ -31,7 +34,6 @@ public class MemoriaFX extends Application {
     // Panel lateral con estado de jugadores
     private VBox panelJugadores;
 
-    // Datos configurables/fijos por requerimiento
     private static final int FILAS = 4;
     private static final int COLUMNAS = 13;
 
@@ -48,7 +50,11 @@ public class MemoriaFX extends Application {
     private final Map<String, Image> imageCache = new HashMap<>();
     private Image backImage = null;
 
+    // Única ruta candidata en disco según lo indicado
     private final List<Path> candidateDirs = new ArrayList<>();
+
+    // Bandera para evitar mostrar múltiples
+    private boolean endDialogShown = false;
 
     @Override
     public void start(Stage primaryStage) {
@@ -56,8 +62,6 @@ public class MemoriaFX extends Application {
         primaryStage.setTitle("MemoriaFX - Inicio");
 
         initCandidateDirs();
-
-        // Intentar precargar imagen de reverso si existe
         precargarBackImage();
 
         // Pantalla de inicio
@@ -86,25 +90,26 @@ public class MemoriaFX extends Application {
     }
 
     private void initCandidateDirs() {
-        String userDir = System.getProperty("user.dir");
+        candidateDirs.clear();
         candidateDirs.add(Paths.get("src", "cardImages"));
-        for (Path p : candidateDirs) {
-            System.out.println("  - " + p.toAbsolutePath().toString());
-        }
+        System.out.println("[MemoriaFX] Ruta candidata para imágenes: " + candidateDirs.get(0).toAbsolutePath());
     }
 
-    // Precarga imagen de reverso si existe en alguna ruta o en classpath
     private void precargarBackImage() {
-        backImage = loadImageFromAnyLocation("Carta Atras.jpg");
-        if (backImage != null) {
-            System.out.println("[MemoriaFX] Reverso (back.jpg) cargado correctamente.");
-        } else {
-            System.out.println("[MemoriaFX] No se encontró back.jpg en las rutas candidatas ni en el classpath.");
+        // Intentar varios nombres comunes para el reverso
+        String[] posibles = {"back.jpg", "Carta Atras.jpg", "back.png", "Carta_Atras.jpg"};
+        for (String nombre : posibles) {
+            Image img = loadImageFromAnyLocation(nombre);
+            if (img != null) {
+                backImage = img;
+                System.out.println("[MemoriaFX] Reverso (" + nombre + ") cargado correctamente.");
+                return;
+            }
         }
+        System.out.println("[MemoriaFX] No se encontró imagen de reverso en src/cardImages ni en classpath.");
     }
 
     private void iniciarFlujoSeleccionModalidad(String modalidadSeleccionada) {
-        // Dialogo para seleccionar cantidad de jugadores (2-4)
         Stage dialog = new Stage();
         dialog.initOwner(primaryStage);
         dialog.initModality(Modality.APPLICATION_MODAL);
@@ -117,16 +122,15 @@ public class MemoriaFX extends Application {
         Button btnSiguiente = new Button("Siguiente");
         Button btnCancelar = new Button("Cancelar");
 
-        HBox botones = new HBox(10, btnSiguiente, btnCancelar);
-        botones.setAlignment(Pos.CENTER);
+        HBox botonesBox = new HBox(10, btnSiguiente, btnCancelar);
+        botonesBox.setAlignment(Pos.CENTER);
 
-        VBox box = new VBox(10, lbl, spCantidad, botones);
+        VBox box = new VBox(10, lbl, spCantidad, botonesBox);
         box.setPadding(new Insets(15));
         box.setAlignment(Pos.CENTER);
 
         Scene s = new Scene(box);
         dialog.setScene(s);
-        dialog.show();
 
         btnCancelar.setOnAction(e -> dialog.close());
         btnSiguiente.setOnAction(e -> {
@@ -134,45 +138,59 @@ public class MemoriaFX extends Application {
             dialog.close();
             solicitarNombresJugadores(modalidadSeleccionada, cantidad);
         });
+
+        dialog.showAndWait();
     }
 
-    // Solicita los nombres de los jugadores en una ventana
     private void solicitarNombresJugadores(String modalidad, int cantidad) {
-        Stage dialog = new Stage();
+        Dialog<List<String>> dialog = new Dialog<>();
         dialog.initOwner(primaryStage);
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Nombres de jugadores");
 
-        VBox campos = new VBox(8);
+        ButtonType btnIniciarType = new ButtonType("Iniciar Juego", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(btnIniciarType, ButtonType.CANCEL);
+
+        GridPane gridPane = new GridPane();
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+        gridPane.setPadding(new Insets(12));
+
         List<TextField> camposNombres = new ArrayList<>();
         for (int i = 0; i < cantidad; i++) {
+            Label lbl = new Label("Jugador " + (i + 1) + ":");
             TextField tf = new TextField();
             tf.setPromptText("Nombre jugador " + (i + 1));
-            campos.getChildren().add(tf);
             camposNombres.add(tf);
+            gridPane.add(lbl, 0, i);
+            gridPane.add(tf, 1, i);
         }
 
-        Button btnIniciar = new Button("Iniciar Juego");
-        Button btnCancelar = new Button("Cancelar");
-        HBox botones = new HBox(8, btnIniciar, btnCancelar);
-        botones.setAlignment(Pos.CENTER);
+        dialog.getDialogPane().setContent(gridPane);
 
-        VBox root = new VBox(10, new Label("Ingrese los nombres:"), campos, botones);
-        root.setPadding(new Insets(12));
-        Scene scene = new Scene(root);
-        dialog.setScene(scene);
-        dialog.show();
+        Platform.runLater(() -> {
+            if (!camposNombres.isEmpty()) camposNombres.get(0).requestFocus();
+        });
 
-        btnCancelar.setOnAction(e -> dialog.close());
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == btnIniciarType) {
+                List<String> nombres = new ArrayList<>();
+                for (TextField tf : camposNombres) nombres.add(tf.getText().trim());
+                return nombres;
+            }
+            return null;
+        });
 
-        btnIniciar.setOnAction(e -> {
+        Optional<List<String>> result = dialog.showAndWait();
+        result.ifPresent(nombres -> {
             List<Jugador> jugadores = new ArrayList<>();
-            for (TextField tf : camposNombres) {
-                String nombre = tf.getText().trim();
-                if (nombre.isEmpty()) nombre = "Jugador";
+            for (int i = 0; i < cantidad; i++) {
+                String nombre = (i < nombres.size()) ? nombres.get(i) : "";
+                if (nombre == null || nombre.isEmpty()) nombre = "Jugador" + (i + 1);
                 jugadores.add(new Jugador(nombre, new ArrayList<>()));
             }
-            dialog.close();
+            // resetear bandera de diálogo final
+            endDialogShown = false;
             crearYIniciarJuego(modalidad, jugadores);
         });
     }
@@ -200,6 +218,9 @@ public class MemoriaFX extends Application {
 
         // Iniciar estado del juego
         juego.iniciar();
+
+        // resetear bandera de diálogo final al comenzar partida
+        endDialogShown = false;
 
         // Construir UI principal del juego
         construirInterfazJuego(jugadores);
@@ -259,7 +280,10 @@ public class MemoriaFX extends Application {
         // Estado general y botón volver a inicio
         lblEstado = new Label("Turno: " + juego.getJugadorActual().getNombre());
         Button btnVolver = new Button("Volver al inicio");
-        btnVolver.setOnAction(e -> start(primaryStage));
+        btnVolver.setOnAction(e -> {
+            imageCache.clear();
+            try { start(primaryStage); } catch (Exception ex) { ex.printStackTrace(); }
+        });
 
         VBox pie = new VBox(8, lblEstado, btnVolver);
         pie.setAlignment(Pos.CENTER);
@@ -309,7 +333,7 @@ public class MemoriaFX extends Application {
         return createColorRegion(idx);
     }
 
-    // Mostrar pares del jugador en un diálogo: agrupar cartas en pares
+    // Mostrar pares del jugador en un diálogo: agrupar cartas en pares (texto)
     private void mostrarParesJugador(Jugador jugador) {
         List<Carta> ganadas = jugador.getCartasGanadas();
         StringBuilder sb = new StringBuilder();
@@ -333,6 +357,79 @@ public class MemoriaFX extends Application {
         al.setContentText(sb.toString());
         al.initOwner(primaryStage);
         al.showAndWait();
+    }
+
+    // Mostrar pares del jugador en un diálogo con imágenes
+    private void mostrarParesConImagenes(Jugador jugador, String title) {
+        Stage dialog = new Stage();
+        dialog.initOwner(primaryStage);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle(title);
+
+        VBox content = new VBox(8);
+        content.setPadding(new Insets(10));
+        content.setAlignment(Pos.CENTER);
+
+        List<Carta> ganadas = jugador.getCartasGanadas();
+        if (ganadas.isEmpty()) {
+            content.getChildren().add(new Label("No ha realizado pares aún."));
+        } else {
+            FlowPane fp = new FlowPane();
+            fp.setHgap(8);
+            fp.setVgap(8);
+            fp.setPrefWrapLength(800);
+
+            for (int i = 0; i < ganadas.size(); i += 2) {
+                Carta a = ganadas.get(i);
+                Carta b = (i + 1 < ganadas.size()) ? ganadas.get(i + 1) : null;
+
+                VBox vbPar = new VBox(4);
+                vbPar.setAlignment(Pos.CENTER);
+
+                HBox hb = new HBox(6);
+                hb.setAlignment(Pos.CENTER);
+
+                Image ia = getImageForCarta(a);
+                if (ia != null) {
+                    ImageView iva = new ImageView(ia);
+                    iva.setFitWidth(80);
+                    iva.setFitHeight(100);
+                    iva.setPreserveRatio(true);
+                    hb.getChildren().add(iva);
+                } else {
+                    hb.getChildren().add(new Label(a.toString()));
+                }
+
+                if (b != null) {
+                    Image ib = getImageForCarta(b);
+                    if (ib != null) {
+                        ImageView ivb = new ImageView(ib);
+                        ivb.setFitWidth(80);
+                        ivb.setFitHeight(100);
+                        ivb.setPreserveRatio(true);
+                        hb.getChildren().add(ivb);
+                    } else {
+                        hb.getChildren().add(new Label(b.toString()));
+                    }
+                }
+
+                vbPar.getChildren().add(hb);
+                vbPar.getChildren().add(new Label("Par " + ((i / 2) + 1)));
+                fp.getChildren().add(vbPar);
+            }
+
+            content.getChildren().add(fp);
+        }
+
+        Button btnCerrar = new Button("Cerrar");
+        btnCerrar.setOnAction(e -> dialog.close());
+
+        content.getChildren().add(new Separator());
+        content.getChildren().add(btnCerrar);
+
+        Scene scene = new Scene(new ScrollPane(content), 900, 600);
+        dialog.setScene(scene);
+        dialog.showAndWait();
     }
 
     // Maneja el click en la casilla (fila, columna)
@@ -411,6 +508,11 @@ public class MemoriaFX extends Application {
                 }
             }
         }
+
+        // Si el juego ya terminó mostrar el diálogo final
+        if (juego != null && juego.isTerminado() && !endDialogShown) {
+            revisarFin(); // revisarFin ahora se encarga de mostrar el diálogo mediante Platform.runLater
+        }
     }
 
     // Refresca apariencia de un único botón según estado de la casilla
@@ -463,7 +565,6 @@ public class MemoriaFX extends Application {
             b.setDisable(false);
             b.setStyle("-fx-background-color: white; -fx-border-color: #555;");
         } else {
-            // boca abajo: mostrar reverso si existe, sino fondo plano
             if (backImage != null) {
                 ImageView iv = new ImageView(backImage);
                 iv.setPreserveRatio(true);
@@ -480,8 +581,6 @@ public class MemoriaFX extends Application {
         }
     }
 
-    // Busca el índice del jugador que tiene la carta en su lista de cartas ganadas.
-    // Retorna -1 si no la tiene ninguno.
     private int buscarJugadorQueTieneCarta(Carta carta) {
         List<Jugador> lista = juego.getJugadores();
         for (int i = 0; i < lista.size(); i++) {
@@ -493,15 +592,12 @@ public class MemoriaFX extends Application {
         return -1;
     }
 
-    // Obtiene la imagen asociada a una carta según el patrón de nombres de archivos.
-    // Devuelve null si no se encuentra la imagen.
     private Image getImageForCarta(Carta carta) {
         if (carta == null) return null;
         // mapear valor para fichero: si getValor()==14 entonces usar 1 (As)
         int valorParaFichero = (carta.getValor() == 14) ? 1 : carta.getValor();
         String paloNombre = paloParaFichero(carta.getPalo());
 
-        // Nombres pueden contener espacios según tu ejemplo: "Carta 1 Trebol.jpg"
         String fileNameJpg = String.format("Carta %d %s.jpg", valorParaFichero, paloNombre);
         String fileNamePng = String.format("Carta %d %s.png", valorParaFichero, paloNombre);
 
@@ -526,26 +622,28 @@ public class MemoriaFX extends Application {
             return imageCache.get(fileName);
         }
 
-        for (Path dir : candidateDirs) {
-            try {
-                Path p = dir.resolve(fileName);
-                if (Files.exists(p)) {
-                    try (FileInputStream fis = new FileInputStream(p.toFile())) {
-                        Image img = new Image(fis);
-                        imageCache.put(fileName, img);
-                        System.out.println("[MemoriaFX] Imagen cargada desde fichero: " + p.toAbsolutePath());
-                        return img;
-                    } catch (Exception ex) {
-                        System.out.println("[MemoriaFX] Error al leer imagen desde " + p.toAbsolutePath() + " : " + ex.getMessage());
+        // 1) probar en la única ruta candidata en disco
+        if (candidateDirs != null) {
+            for (Path dir : candidateDirs) {
+                try {
+                    Path p = dir.resolve(fileName);
+                    if (Files.exists(p) && Files.isRegularFile(p)) {
+                        try (FileInputStream fis = new FileInputStream(p.toFile())) {
+                            Image img = new Image(fis);
+                            imageCache.put(fileName, img);
+                            System.out.println("[MemoriaFX] Imagen cargada desde fichero: " + p.toAbsolutePath());
+                            return img;
+                        } catch (Exception ex) {
+                            System.out.println("[MemoriaFX] Error al leer imagen desde " + p.toAbsolutePath() + " : " + ex.getMessage());
+                        }
                     }
-                } else {
-                    // intentar versión con mayúsculas/minúsculas? no en este paso
+                } catch (Exception ex) {
+                    System.out.println("[MemoriaFX] Excepción comprobando " + dir + " : " + ex.getMessage());
                 }
-            } catch (Exception ex) {
-                System.out.println("[MemoriaFX] Excepción comprobando " + dir + " : " + ex.getMessage());
             }
         }
 
+        // 2) intentar cargar desde classpath: /cardImages/fileName
         String resourcePath = "/cardImages/" + fileName;
         try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
             if (is != null) {
@@ -553,21 +651,12 @@ public class MemoriaFX extends Application {
                 imageCache.put(fileName, img);
                 System.out.println("[MemoriaFX] Imagen cargada desde classpath: " + resourcePath);
                 return img;
-            } else {
-                // intentar sin prefijo slash (no suele ser necesario, pero por si acaso)
-                try (InputStream is2 = getClass().getResourceAsStream("cardImages/" + fileName)) {
-                    if (is2 != null) {
-                        Image img = new Image(is2);
-                        imageCache.put(fileName, img);
-                        System.out.println("[MemoriaFX] Imagen cargada desde classpath (sin slash): cardImages/" + fileName);
-                        return img;
-                    }
-                } catch (Exception ignored) {}
             }
         } catch (Exception ex) {
             System.out.println("[MemoriaFX] Error cargando recurso classpath " + resourcePath + " : " + ex.getMessage());
         }
 
+        // 3) intentar cargar como recurso del ClassLoader: cardImages/fileName
         try (InputStream is3 = Thread.currentThread().getContextClassLoader().getResourceAsStream("cardImages/" + fileName)) {
             if (is3 != null) {
                 Image img = new Image(is3);
@@ -579,6 +668,7 @@ public class MemoriaFX extends Application {
             System.out.println("[MemoriaFX] Error cargando con ClassLoader: " + ex.getMessage());
         }
 
+        // si no encontrada, cachear null para no repetir búsquedas costosas
         imageCache.put(fileName, null);
         System.out.println("[MemoriaFX] No se encontró imagen: " + fileName);
         return null;
@@ -612,32 +702,98 @@ public class MemoriaFX extends Application {
 
     // Revisa si el juego terminó y muestra diálogo con ganadores y tabla de resultados
     private void revisarFin() {
-        if (juego.isTerminado()) {
-            List<Jugador> ganadores = juego.obtenerGanadores();
-            StringBuilder sb = new StringBuilder();
-            if (ganadores.size() == 1) {
-                sb.append("Ganador: ").append(ganadores.get(0).getNombre()).append("\n\n");
-            } else {
-                sb.append("Empate entre: ");
-                for (int i = 0; i < ganadores.size(); i++) {
-                    if (i > 0) sb.append(", ");
-                    sb.append(ganadores.get(i).getNombre());
-                }
-                sb.append("\n\n");
-            }
-            sb.append("Resultados:\n");
-            for (Jugador j : juego.getJugadores()) {
-                sb.append(j.getNombre()).append(" - Pares: ").append(j.getNumeroDePares())
-                        .append(" - Suma: ").append(j.getSumaTotalDeValores()).append("\n");
-            }
+        if (juego == null) return;
+        if (!juego.isTerminado()) return;
+        if (endDialogShown) return;
 
-            Alert al = new Alert(Alert.AlertType.INFORMATION);
-            al.setTitle("Juego terminado");
-            al.setHeaderText("Fin del juego");
-            al.setContentText(sb.toString());
-            al.initOwner(primaryStage);
-            al.showAndWait();
+        // Marcar que ya mostraremos el diálogo para no mostrarlo varias veces
+        endDialogShown = true;
+
+        // Mostrar diálogo en la cola de la UI
+        Platform.runLater(() -> {
+            List<Jugador> ganadores = juego.obtenerGanadores();
+            showEndGameDialogWithButtons(ganadores);
+        });
+    }
+
+    /**
+     * Nuevo método: muestra la ventana de fin de juego con botones "Ver pares" para cada jugador.
+     * Cada botón llama a mostrarParesConImagenes(jugador, "Pares de ...").
+     */
+    private void showEndGameDialogWithButtons(List<Jugador> ganadores) {
+        Stage dialog = new Stage();
+        dialog.initOwner(primaryStage);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Fin del juego");
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(12));
+        content.setAlignment(Pos.CENTER);
+
+        Label header;
+        if (ganadores.size() == 1) {
+            header = new Label("Ganador: " + ganadores.get(0).getNombre());
+        } else {
+            StringBuilder sb = new StringBuilder("Empate entre: ");
+            for (int i = 0; i < ganadores.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(ganadores.get(i).getNombre());
+            }
+            header = new Label(sb.toString());
         }
+        header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        content.getChildren().add(header);
+
+        // Para cada jugador en el juego (no solo ganadores) mostrar su contador y un botón para ver pares
+        VBox listaJugadoresBox = new VBox(8);
+        listaJugadoresBox.setAlignment(Pos.CENTER_LEFT);
+
+        for (Jugador j : juego.getJugadores()) {
+            HBox fila = new HBox(8);
+            fila.setAlignment(Pos.CENTER_LEFT);
+            Label lbl = new Label(j.getNombre() + " - Pares: " + j.getNumeroDePares());
+            Button btnVer = new Button("Ver pares");
+            btnVer.setOnAction(e -> mostrarParesConImagenes(j, "Pares de " + j.getNombre()));
+            fila.getChildren().addAll(lbl, btnVer);
+            listaJugadoresBox.getChildren().add(fila);
+        }
+
+        content.getChildren().add(new Label("Jugadores:"));
+        content.getChildren().add(listaJugadoresBox);
+
+        HBox botones = new HBox(10);
+        botones.setAlignment(Pos.CENTER);
+
+        Button btnRevancha = new Button("Revancha");
+        Button btnSeleccionModo = new Button("Seleccion de modo");
+        Button btnSalir = new Button("Salir");
+
+        btnRevancha.setOnAction(e -> {
+            dialog.close();
+            // iniciar revancha: reiniciar estado manteniendo modalidades/jugadores
+            // Para simplificar, volvemos al inicio; si quieres, puedes implementar revancha real.
+            try { start(primaryStage); } catch (Exception ex) { ex.printStackTrace(); }
+        });
+
+        btnSeleccionModo.setOnAction(e -> {
+            dialog.close();
+            imageCache.clear();
+            try { start(primaryStage); } catch (Exception ex) { ex.printStackTrace(); }
+        });
+
+        btnSalir.setOnAction(e -> {
+            dialog.close();
+            Platform.exit();
+        });
+
+        botones.getChildren().addAll(btnRevancha, btnSeleccionModo, btnSalir);
+
+        content.getChildren().add(new Separator());
+        content.getChildren().add(botones);
+
+        Scene scene = new Scene(new ScrollPane(content), 900, 600);
+        dialog.setScene(scene);
+        dialog.showAndWait();
     }
 
     public static void main(String[] args) {
