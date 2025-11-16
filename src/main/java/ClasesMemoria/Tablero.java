@@ -1,44 +1,73 @@
 package ClasesMemoria;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+
 
 
 public class Tablero {
 
-    private final List<Carta> cartas;
+    private final Casilla[][] casillas;
     private final int filas;
     private final int columnas;
 
-    public Tablero(int filas, int columnas, List<Carta> cartas) {
+    public Tablero(int filas, int columnas, List<Carta> cartasIniciales) {
         this.filas = filas;
         this.columnas = columnas;
-        this.cartas = new ArrayList<>(cartas); // copia defensiva
+        this.casillas = new Casilla[filas][columnas];
+
+        //Llenado de la matriz con objetos Casilla
+        int k = 0;
+        for (int i = 0; i < filas; i++) {
+            for (int j = 0; j < columnas; j++) {
+                // Cada posición recibe un nuevo objeto Casilla que contiene una Carta
+                this.casillas[i][j] = new Casilla(cartasIniciales.get(k++));
+            }
+        }
+    }
+    private boolean esPosicionValida(int fila, int columna) {
+        return fila >= 0 && fila < filas && columna >= 0 && columna < columnas;
     }
 
-    // Devuelve la carta en el índice lineal
-    public Carta getCartaEn(int index) {
-        if (index < 0 || index >= cartas.size()) return null;
-        return cartas.get(index);
+    public void voltearCarta(int fila, int columna) {
+        if (esPosicionValida(fila, columna)) {
+            casillas[fila][columna].voltear();
+        }
+    }
+
+    public void ocultarCarta(int fila, int columna) {
+        if (esPosicionValida(fila, columna)) {
+            casillas[fila][columna].ocultar();
+        }
+    }
+
+    public void marcarComoEmparejada(int fila, int columna) {
+        if (esPosicionValida(fila, columna)) {
+            casillas[fila][columna].marcarComoEmparejada();
+        }
+    }
+
+    public Carta getCartaEn(int fila, int columna) {
+        Casilla casilla = getCasillaEn(fila, columna);
+        return (casilla != null) ? casilla.getCarta() : null;
     }
 
     // Devuelve la carta en la posición fila/columna
-    public Carta getCartaEn(int fila, int columna) {
-        if (fila < 0 || fila >= filas || columna < 0 || columna >= columnas) return null;
-        int idx = fila * columnas + columna;
-        return getCartaEn(idx);
+    public Casilla getCasillaEn(int fila, int columna) {
+        if (esPosicionValida(fila, columna)) {
+            return casillas[fila][columna];
+        }
+        return null;
     }
-
-    // Baraja las cartas del tablero.
-    public void barajar() {
-        Collections.shuffle(cartas);
-    }
-
-    // Número total de posiciones en el tablero.
-    public int size() {
-        return cartas.size();
+    public boolean estanTodasEmparejadas() {
+        for (int i = 0; i < filas; i++) {
+            for (int j = 0; j < columnas; j++) {
+                if (!casillas[i][j].estaEmparejada()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public int getFilas() {
@@ -49,13 +78,10 @@ public class Tablero {
         return columnas;
     }
 
-    // Devuelve una vista inmutable de las cartas.
-    public List<Carta> getCartas() {
-        return Collections.unmodifiableList(cartas);
-    }
 
     @Override
     public String toString() {
-        return "Tablero{filas=" + filas + ", columnas=" + columnas + ", cartas=" + cartas.size() + "}";
+        int totalCartas = filas * columnas;
+        return "Tablero{filas=" + filas + ", columnas=" + columnas + ", cartas=" + totalCartas + "}";
     }
 }
