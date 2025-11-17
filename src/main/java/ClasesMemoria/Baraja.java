@@ -3,11 +3,12 @@ package ClasesMemoria;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class Baraja {
+public class Baraja implements Iterable<Carta> {
     /**
      * Clase que representa la baraja de 52 cartas y permite seleccionar cartas
      * para crear el conjunto del tablero sin repetir cartas.
@@ -138,5 +139,13 @@ public class Baraja {
      */
     public List<Carta> getBarajaCompleta() {
         return new ArrayList<>(barajaCompleta);
+    }
+
+    /**
+     * Devuelve un iterador sobre las cartas de la baraja en el orden actual.
+     */
+    @Override
+    public Iterator<Carta> iterator() {
+        return new ArrayList<>(barajaCompleta).iterator();
     }
 }
