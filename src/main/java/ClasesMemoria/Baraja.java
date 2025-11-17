@@ -22,7 +22,7 @@ public class Baraja {
         }
     }
 
-    public List<Carta> getCartasParaTablero(int tamañoTablero) {
+    public List<Carta> getCartasParaTablero(int tamañoTablero, String modalidad) {
         int nPares = tamañoTablero / 2;
 
         //Usa una copia y barajarla para seleccionar cartas aleatorias
