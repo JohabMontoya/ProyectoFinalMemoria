@@ -2,9 +2,10 @@ package ClasesMemoria;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
-public class Jugador {
+public class Jugador implements Iterable<Carta> {
     /**
      * Clase que representa un jugador y las cartas que ha ganado.
      */
@@ -62,8 +63,13 @@ public class Jugador {
     }
 
     /**
-     * Representación breve del jugador.
+     * Devuelve un iterador sobre las cartas ganadas por el jugador.
      */
+    @Override
+    public Iterator<Carta> iterator() {
+        return cartasGanadas.iterator();
+    }
+
     @Override
     public String toString() {
         return nombre + " (Pares: " + getNumeroDePares() + ")";

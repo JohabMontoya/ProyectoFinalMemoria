@@ -1,5 +1,8 @@
 package ClasesMemoria;
 
+import javafx.animation.FadeTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.SequentialTransition;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -12,6 +15,9 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -21,7 +27,7 @@ import java.io.InputStream;
 import java.nio.file.*;
 import java.util.*;
 
-public class MemoriaFX extends Application {
+public class GUIMemoria extends Application {
     /**
      * Interfaz JavaFX que presenta el juego y opera sólo en la capa visual.
      * Consulta y manda acciones al JuegoController para la lógica.
@@ -71,26 +77,44 @@ public class MemoriaFX extends Application {
         inicio.setAlignment(Pos.CENTER);
 
         Label titulo = new Label("MemoriaFX");
-        titulo.setStyle("-fx-font-size:28px; -fx-font-weight:bold; -fx-text-fill:#2E2E2E;");
+        titulo.setStyle("-fx-font-size:34px; -fx-font-weight:bold; -fx-text-fill:#2E2E2E;");
+        titulo.setFont(Font.font("Segoe UI", 34));
 
         Button btnPorValor = new Button("Por Valor");
         Button btnPorValorColor = new Button("Por Valor y Color");
         Button btnSalir = new Button("Salir");
 
-        btnPorValor.setPrefWidth(220);
-        btnPorValorColor.setPrefWidth(220);
-        btnSalir.setPrefWidth(220);
+        btnPorValor.setPrefWidth(260);
+        btnPorValorColor.setPrefWidth(260);
+        btnSalir.setPrefWidth(260);
+
+        btnPorValor.setStyle(buttonStylePrimary());
+        btnPorValorColor.setStyle(buttonStylePrimary());
+        btnSalir.setStyle(buttonStyleDanger());
 
         btnPorValor.setOnAction(e -> iniciarFlujoSeleccionModalidad("Por Valor"));
         btnPorValorColor.setOnAction(e -> iniciarFlujoSeleccionModalidad("Por Valor y Color"));
         btnSalir.setOnAction(e -> primaryStage.close());
 
         inicio.getChildren().addAll(titulo, btnPorValor, btnPorValorColor, btnSalir);
-        inicio.setStyle("-fx-background-color: linear-gradient(to bottom, #EDE7F6, #E3F2FD);");
+        inicio.setStyle("-fx-background-color: linear-gradient(to bottom right, #FFFDE7, #E3F2FD);");
 
-        Scene scene = new Scene(inicio, 900, 600);
+        Scene scene = new Scene(inicio, 1000, 640);
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    private String buttonStylePrimary() {
+        return "-fx-background-color: linear-gradient(to bottom, #FFD54F, #FFB300);" +
+                "-fx-font-weight:bold; -fx-font-size:14px; -fx-text-fill:#3E2723; " +
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0, 0, 2); " +
+                "-fx-background-radius:8;";
+    }
+
+    private String buttonStyleDanger() {
+        return "-fx-background-color: linear-gradient(to bottom, #FFCDD2, #EF9A9A); " +
+                "-fx-font-weight:bold; -fx-font-size:14px; -fx-text-fill:#3E2723; " +
+                "-fx-background-radius:8;";
     }
 
     /**
@@ -212,33 +236,40 @@ public class MemoriaFX extends Application {
         root.setBackground(new Background(new BackgroundFill(Color.web("#F9FBE7"), CornerRadii.EMPTY, Insets.EMPTY)));
 
         topBar = new HBox(12);
-        topBar.setPadding(new Insets(8));
+        topBar.setPadding(new Insets(10));
         topBar.setAlignment(Pos.CENTER_LEFT);
         topBar.setStyle("-fx-background-color: linear-gradient(to right, #FFFDE7, #FFF9C4); -fx-border-color: #FFE082; -fx-border-width: 0 0 2 0;");
+        topBar.setEffect(new DropShadow(8, Color.rgb(0, 0, 0, 0.12)));
 
         Label gameTitle = new Label("MemoriaFX");
-        gameTitle.setStyle("-fx-font-size:18px; -fx-font-weight:bold; -fx-text-fill:#3E2723;");
+        gameTitle.setStyle("-fx-font-size:20px; -fx-font-weight:bold; -fx-text-fill:#3E2723;");
         topBar.getChildren().add(gameTitle);
         topBar.getChildren().add(new Separator(javafx.geometry.Orientation.VERTICAL));
 
         for (int i = 0; i < jugadores.size(); i++) {
             Jugador j = jugadores.get(i);
-            VBox playerBox = new VBox(4);
+            VBox playerBox = new VBox(6);
             playerBox.setAlignment(Pos.CENTER);
-            playerBox.setPadding(new Insets(4));
-            Region color = new Region();
-            color.setPrefSize(16, 16);
-            color.setStyle("-fx-background-color: " + PLAYER_COLORS[Math.min(i, PLAYER_COLORS.length - 1)] + "; -fx-border-color:#6D4C41;");
+            playerBox.setPadding(new Insets(6));
+            playerBox.setMinWidth(140);
+            playerBox.setMaxWidth(220);
+
+            Region color = createAvatar(j.getNombre(), Color.web(PLAYER_COLORS[Math.min(i, PLAYER_COLORS.length - 1)]));
             Label name = new Label(j.getNombre());
-            name.setStyle("-fx-font-weight:bold;");
+            name.setStyle("-fx-font-weight:bold; -fx-font-size:13px;");
             Label pares = new Label("Pares: " + j.getNumeroDePares());
             pares.setStyle("-fx-font-size:11px;");
             Button ver = new Button("Ver pares");
             int idx = i;
             ver.setOnAction(e -> mostrarParesConImagenes(controller.getJugadores().get(idx), "Pares de " + controller.getJugadores().get(idx).getNombre()));
             ver.setStyle("-fx-background-color:#FFE082; -fx-font-weight:bold;");
+
             playerBox.getChildren().addAll(color, name, pares, ver);
             playerBox.setUserData(pares);
+
+            playerBox.setStyle("-fx-background-color: rgba(255,255,255,0.85); -fx-border-color: transparent; -fx-border-radius:8; -fx-background-radius:8;");
+            playerBox.setEffect(new DropShadow(6, Color.rgb(0,0,0,0.08)));
+
             topBar.getChildren().add(playerBox);
         }
 
@@ -249,11 +280,11 @@ public class MemoriaFX extends Application {
         HBox.setHgrow(rightGap, Priority.ALWAYS);
 
         lblEstado = new Label("Turno: " + (controller.getJugadorActual() != null ? controller.getJugadorActual().getNombre() : ""));
-        lblEstado.setStyle("-fx-font-weight:bold; -fx-font-size:16px;");
+        lblEstado.setStyle("-fx-font-weight:bold; -fx-font-size:16px; -fx-text-fill:#4E342E;");
         lblEstado.setAlignment(Pos.CENTER);
 
         Button btnSalirPartida = new Button("Salir");
-        btnSalirPartida.setStyle("-fx-background-color:#FFCDD2; -fx-font-weight:bold;");
+        btnSalirPartida.setStyle(buttonStyleDanger());
         btnSalirPartida.setOnAction(e -> {
             controller = null;
             endDialogShown = false;
@@ -269,8 +300,8 @@ public class MemoriaFX extends Application {
         root.setTop(topBar);
 
         grid = new GridPane();
-        grid.setHgap(6);
-        grid.setVgap(6);
+        grid.setHgap(8);
+        grid.setVgap(8);
         grid.setPadding(new Insets(12));
         grid.setAlignment(Pos.CENTER);
         botones = new Button[FILAS][COLUMNAS];
@@ -286,6 +317,9 @@ public class MemoriaFX extends Application {
                 b.setOnMouseExited(ev -> { b.setScaleX(1.0); b.setScaleY(1.0); });
                 botones[r][c] = b;
                 grid.add(b, c, r);
+
+                // store previous visible state for flip animation decisions
+                b.getProperties().put("volteada", Boolean.FALSE);
             }
         }
 
@@ -308,6 +342,26 @@ public class MemoriaFX extends Application {
     }
 
     /**
+     * Crea un "avatar" circular con las iniciales del jugador.
+     */
+    private Region createAvatar(String nombre, Color color) {
+        StackPane sp = new StackPane();
+        Circle circle = new Circle(18, color);
+        circle.setEffect(new DropShadow(4, Color.rgb(0,0,0,0.14)));
+        Label l = new Label(initials(nombre));
+        l.setStyle("-fx-text-fill: #1B1B1B; -fx-font-weight:bold;");
+        sp.getChildren().addAll(circle, l);
+        return sp;
+    }
+
+    private String initials(String nombre) {
+        if (nombre == null || nombre.isEmpty()) return "";
+        String[] parts = nombre.trim().split("\\s+");
+        if (parts.length == 1) return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
+        return ("" + parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    }
+
+    /**
      * Maneja el click del usuario en la posición (fila, columna).
      * La UI muestra la carta y delega la evaluación al controller.
      */
@@ -324,6 +378,7 @@ public class MemoriaFX extends Application {
             actualizarEstado();
             revisarFin();
         } else if (visibles == 1) {
+            // play a quick visual to show an intermediate flip on UI thread for better UX
             controller.getTablero().voltearCarta(fila, columna);
             refrescarTodo();
 
@@ -442,6 +497,25 @@ public class MemoriaFX extends Application {
             }
         }
 
+        // highlight current player visually
+        if (controller != null && topBar != null) {
+            List<Jugador> lista = controller.getJugadores();
+            int startIdx = 2; // because first nodes are title and separator
+            for (int i = 0; i < lista.size(); i++) {
+                int nodeIdx = startIdx + i;
+                if (nodeIdx >= topBar.getChildren().size()) break;
+                javafx.scene.Node node = topBar.getChildren().get(nodeIdx);
+                if (node instanceof VBox) {
+                    VBox vb = (VBox) node;
+                    if (controller.getJugadorActual() != null && lista.get(i).getNombre().equals(controller.getJugadorActual().getNombre())) {
+                        vb.setStyle("-fx-background-color: linear-gradient(to bottom, rgba(255,250,205,0.95), rgba(255,243,179,0.95)); -fx-border-color:#FFD54F; -fx-border-width:2; -fx-border-radius:8; -fx-background-radius:8;");
+                    } else {
+                        vb.setStyle("-fx-background-color: rgba(255,255,255,0.85); -fx-border-color: transparent; -fx-background-radius:8;");
+                    }
+                }
+            }
+        }
+
         if (controller != null && controller.getJugadorActual() != null && lblEstado != null) {
             lblEstado.setText("Turno: " + controller.getJugadorActual().getNombre());
         }
@@ -451,6 +525,7 @@ public class MemoriaFX extends Application {
 
     /**
      * Refresca el botón en la celda (fila, columna) según el estado de la casilla.
+     * Añade animación de flip cuando el estado 'volteada' cambia.
      */
     private void refrescarBoton(int fila, int columna) {
         Button b = botones[fila][columna];
@@ -465,52 +540,85 @@ public class MemoriaFX extends Application {
             return;
         }
         Carta carta = cas.getCarta();
-        if (cas.estaEmparejada()) {
-            int owner = buscarJugadorQueTieneCarta(carta);
-            String color = owner >= 0 ? PLAYER_COLORS[Math.min(owner, PLAYER_COLORS.length - 1)] : "#E0F2F1";
-            Image img = getImageForCarta(carta);
-            if (img != null) {
-                ImageView iv = new ImageView(img);
-                iv.setFitWidth(currentImgFitW);
-                iv.setFitHeight(currentImgFitH);
-                iv.setPreserveRatio(true);
-                b.setGraphic(iv);
-                b.setText("");
+
+        boolean prevVolteada = Boolean.TRUE.equals(b.getProperties().get("volteada"));
+        boolean currVolteada = cas.estaVolteada();
+
+        Runnable applyGraphics = () -> {
+            if (cas.estaEmparejada()) {
+                int owner = buscarJugadorQueTieneCarta(carta);
+                String color = owner >= 0 ? PLAYER_COLORS[Math.min(owner, PLAYER_COLORS.length - 1)] : "#E0F2F1";
+                Image img = getImageForCarta(carta);
+                if (img != null) {
+                    ImageView iv = new ImageView(img);
+                    iv.setFitWidth(currentImgFitW);
+                    iv.setFitHeight(currentImgFitH);
+                    iv.setPreserveRatio(true);
+                    b.setGraphic(iv);
+                    b.setText("");
+                } else {
+                    b.setGraphic(null);
+                    b.setText(carta.toString());
+                }
+                b.setDisable(true);
+                b.setStyle("-fx-background-color:" + color + "; -fx-border-color:#8D6E63; -fx-font-weight:bold;");
+                // colored glow for emparejada
+                DropShadow ds = new DropShadow(18, Color.web(color));
+                ds.setSpread(0.12);
+                b.setEffect(ds);
+            } else if (cas.estaVolteada()) {
+                Image img = getImageForCarta(carta);
+                if (img != null) {
+                    ImageView iv = new ImageView(img);
+                    iv.setFitWidth(currentImgFitW);
+                    iv.setFitHeight(currentImgFitH);
+                    iv.setPreserveRatio(true);
+                    b.setGraphic(iv);
+                    b.setText("");
+                } else {
+                    b.setGraphic(null);
+                    b.setText(carta.toString());
+                }
+                b.setDisable(false);
+                b.setStyle("-fx-background-color:white; -fx-border-color:#90A4AE;");
+                b.setEffect(new DropShadow(6, Color.rgb(0,0,0,0.08)));
             } else {
-                b.setGraphic(null);
-                b.setText(carta.toString());
+                if (backImage != null) {
+                    ImageView iv = new ImageView(backImage);
+                    iv.setFitWidth(currentImgFitW);
+                    iv.setFitHeight(currentImgFitH);
+                    iv.setPreserveRatio(true);
+                    b.setGraphic(iv);
+                    b.setText("");
+                } else {
+                    b.setGraphic(null);
+                    b.setText("");
+                }
+                b.setDisable(false);
+                b.setStyle("-fx-background-color:linear-gradient(to bottom, #ECEFF1, #CFD8DC); -fx-border-color:#B0BEC5;");
+                b.setEffect(null);
             }
-            b.setDisable(true);
-            b.setStyle("-fx-background-color:" + color + "; -fx-border-color:#8D6E63; -fx-font-weight:bold;");
-        } else if (cas.estaVolteada()) {
-            Image img = getImageForCarta(carta);
-            if (img != null) {
-                ImageView iv = new ImageView(img);
-                iv.setFitWidth(currentImgFitW);
-                iv.setFitHeight(currentImgFitH);
-                iv.setPreserveRatio(true);
-                b.setGraphic(iv);
-                b.setText("");
-            } else {
-                b.setGraphic(null);
-                b.setText(carta.toString());
-            }
-            b.setDisable(false);
-            b.setStyle("-fx-background-color:white; -fx-border-color:#90A4AE;");
+            // store current state
+            b.getProperties().put("volteada", currVolteada ? Boolean.TRUE : Boolean.FALSE);
+        };
+
+        // Only animate flip when visible state changed (volteada toggled)
+        if (prevVolteada != currVolteada) {
+            // flip effect: scaleX 1->0, change content, scaleX 0->1
+            ScaleTransition shrink = new ScaleTransition(Duration.millis(140), b);
+            shrink.setFromX(1.0);
+            shrink.setToX(0.0);
+            ScaleTransition expand = new ScaleTransition(Duration.millis(140), b);
+            expand.setFromX(0.0);
+            expand.setToX(1.0);
+            shrink.setOnFinished(ev -> {
+                applyGraphics.run();
+            });
+            SequentialTransition seq = new SequentialTransition(shrink, expand);
+            seq.play();
         } else {
-            if (backImage != null) {
-                ImageView iv = new ImageView(backImage);
-                iv.setFitWidth(currentImgFitW);
-                iv.setFitHeight(currentImgFitH);
-                iv.setPreserveRatio(true);
-                b.setGraphic(iv);
-                b.setText("");
-            } else {
-                b.setGraphic(null);
-                b.setText("");
-            }
-            b.setDisable(false);
-            b.setStyle("-fx-background-color:linear-gradient(to bottom, #ECEFF1, #CFD8DC); -fx-border-color:#B0BEC5;");
+            // no animation, apply immediately
+            applyGraphics.run();
         }
     }
 
@@ -620,6 +728,7 @@ public class MemoriaFX extends Application {
 
     /**
      * Muestra el diálogo de fin de partida con opciones y posibilidad de ver pares por jugador.
+     * Se eliminó el botón "Revancha" según solicitud.
      */
     private void showEndGameDialogWithButtons(List<Jugador> ganadores) {
         Stage dialog = new Stage();
@@ -632,16 +741,16 @@ public class MemoriaFX extends Application {
         content.setAlignment(Pos.CENTER);
 
         Label header;
-        if (ganadores.size() == 1) header = new Label("Ganador: " + ganadores.get(0).getNombre());
+        if (ganadores.size() == 1) header = new Label("🏆 Ganador: " + ganadores.get(0).getNombre());
         else {
-            StringBuilder sb = new StringBuilder("Empate entre: ");
+            StringBuilder sb = new StringBuilder("🤝 Empate entre: ");
             for (int i = 0; i < ganadores.size(); i++) {
                 if (i > 0) sb.append(", ");
                 sb.append(ganadores.get(i).getNombre());
             }
             header = new Label(sb.toString());
         }
-        header.setStyle("-fx-font-size:16px; -fx-font-weight:bold;");
+        header.setStyle("-fx-font-size:18px; -fx-font-weight:bold;");
         content.getChildren().add(header);
 
         for (Jugador j : controller.getJugadores()) {
@@ -650,19 +759,21 @@ public class MemoriaFX extends Application {
             Label l = new Label(j.getNombre() + " - Pares: " + j.getNumeroDePares());
             Button ver = new Button("Ver pares");
             ver.setOnAction(e -> mostrarParesConImagenes(j, "Pares de " + j.getNombre()));
+            ver.setStyle("-fx-background-color:#FFF59D;");
             row.getChildren().addAll(l, ver);
             content.getChildren().add(row);
         }
 
         HBox botones = new HBox(10);
         botones.setAlignment(Pos.CENTER);
-        Button revancha = new Button("Revancha");
+        // El botón "Revancha" fue removido; quedan "Seleccion de modo" y "Salir"
         Button modo = new Button("Seleccion de modo");
         Button salir = new Button("Salir");
-        revancha.setOnAction(e -> { dialog.close(); try { start(primaryStage); } catch (Exception ex) { ex.printStackTrace(); }});
         modo.setOnAction(e -> { dialog.close(); try { start(primaryStage); } catch (Exception ex) { ex.printStackTrace(); }});
         salir.setOnAction(e -> { dialog.close(); Platform.exit(); });
-        botones.getChildren().addAll(revancha, modo, salir);
+        modo.setStyle(buttonStylePrimary());
+        salir.setStyle(buttonStyleDanger());
+        botones.getChildren().addAll(modo, salir);
 
         content.getChildren().add(new Separator());
         content.getChildren().add(botones);
