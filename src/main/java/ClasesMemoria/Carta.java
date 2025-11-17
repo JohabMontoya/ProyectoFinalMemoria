@@ -1,5 +1,7 @@
 package ClasesMemoria;
 
+import java.util.Objects;
+
 public class Carta implements Comparable<Carta> {
     private final int valor;
     private final Palo palo;
@@ -10,9 +12,16 @@ public class Carta implements Comparable<Carta> {
 
     }
     // getters/setters
+
+     // Valor usado para comparaciones donde As se considera 14.
     public int getValor() {
         return (valor == 1) ? 14 : valor;
     }
+
+    public int getRawValor() {
+        return valor;
+    }
+
     public Palo getPalo() {
         return palo;
     }
@@ -50,5 +59,19 @@ public class Carta implements Comparable<Carta> {
         int comparar = Integer.compare(this.getValor(), o.getValor());
         if (comparar != 0) return comparar;
         return Integer.compare(this.palo.getPeso(), o.palo.getPeso());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Carta)) return false;
+        Carta carta = (Carta) o;
+        // Comparar por valor original (1..13) y por palo
+        return this.valor == carta.valor && this.palo == carta.palo;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(valor, palo);
     }
 }
