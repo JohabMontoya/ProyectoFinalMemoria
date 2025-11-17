@@ -1,6 +1,5 @@
 package ClasesMemoria;
 
-import ClasesMemoria.*;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -22,26 +21,17 @@ import java.io.InputStream;
 import java.nio.file.*;
 import java.util.*;
 
-/**
- * MemoriaFX - Interfaz JavaFX con barra superior y cartas escalables.
- *
- * Ahora MemoriaFX está enfocada exclusivamente en la presentación:
- * - No crea Baraja/Tablero/Juego directamente; usa JuegoController.
- * - Toda la "lógica del modelo" queda en JuegoController / JuegoMemoria.
- */
 public class MemoriaFX extends Application {
-
-    // ahora usamos un controller para la lógica
+    /**
+     * Interfaz JavaFX que presenta el juego y opera sólo en la capa visual.
+     * Consulta y manda acciones al JuegoController para la lógica.
+     */
     private JuegoController controller;
-
     private GridPane grid;
     private Button[][] botones;
     private Label lblEstado;
-
-    // Barra superior (en vez de panel lateral)
     private HBox topBar;
 
-    // Datos fijos
     private static final int FILAS = 4;
     private static final int COLUMNAS = 13;
 
@@ -50,39 +40,32 @@ public class MemoriaFX extends Application {
     };
 
     private Stage primaryStage;
-
     private final Map<String, Image> imageCache = new HashMap<>();
     private Image backImage = null;
-
-    // Ruta candidata para imágenes en disco
     private final List<Path> candidateDirs = new ArrayList<>();
-
-    // Evitar múltiples diálogos de fin
     private boolean endDialogShown = false;
 
-    // Tamaños y límites (ajustados)
     private static final double CARD_MIN_WIDTH = 64;
     private static final double CARD_MAX_WIDTH = 100;
     private static final double CARD_DEFAULT_WIDTH = 88;
-    private static final double CARD_ASPECT = 1.36; // alto = ancho * aspect
+    private static final double CARD_ASPECT = 1.36;
 
-    // tamaño de imagen dentro del botón (proporcional, se recalcula)
     private double currentImgFitW = 72;
     private double currentImgFitH = 100;
 
+    /**
+     * Punto de entrada JavaFX: muestra la pantalla inicial con selección de modo.
+     */
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
         primaryStage.setTitle("MemoriaFX - Memorama");
 
-        // configurar ruta de imágenes
         candidateDirs.clear();
         candidateDirs.add(Paths.get("src", "cardImages"));
-        System.out.println("[MemoriaFX] Ruta candidata para imágenes: " + candidateDirs.get(0).toAbsolutePath());
 
         precargarBackImage();
 
-        // Pantalla de inicio simple
         VBox inicio = new VBox(14);
         inicio.setPadding(new Insets(28));
         inicio.setAlignment(Pos.CENTER);
@@ -110,20 +93,23 @@ public class MemoriaFX extends Application {
         primaryStage.show();
     }
 
+    /**
+     * Intenta precargar la imagen de reverso desde rutas conocidas.
+     */
     private void precargarBackImage() {
         String[] posibles = {"back.jpg", "Carta Atras.jpg", "back.png", "Carta_Atras.jpg"};
         for (String n : posibles) {
             Image img = loadImageFromAnyLocation(n);
             if (img != null) {
                 backImage = img;
-                System.out.println("[MemoriaFX] Reverso cargado: " + n);
                 return;
             }
         }
-        System.out.println("[MemoriaFX] No se encontró imagen de reverso en src/cardImages ni en classpath.");
     }
 
-    // Diálogo unificado: cantidad + nombres (dinámico)
+    /**
+     * Muestra un diálogo para seleccionar modalidad y nombres de jugadores.
+     */
     private void iniciarFlujoSeleccionModalidad(String modalidadSeleccionada) {
         Dialog<List<String>> dialog = new Dialog<>();
         dialog.initOwner(primaryStage);
@@ -188,6 +174,9 @@ public class MemoriaFX extends Application {
         });
     }
 
+    /**
+     * Actualiza los campos de nombre según la cantidad de jugadores.
+     */
     private void updateNameFields(GridPane gridFields, List<TextField> nameFields, int cantidad) {
         gridFields.getChildren().clear();
         nameFields.clear();
@@ -203,7 +192,7 @@ public class MemoriaFX extends Application {
     }
 
     /**
-     * Ahora delega la creación/inicio de la partida al JuegoController.
+     * Crea el controller, inicia la partida y construye la interfaz de juego.
      */
     private void crearYIniciarJuego(String modalidad, List<Jugador> jugadores) {
         controller = new JuegoController();
@@ -212,6 +201,9 @@ public class MemoriaFX extends Application {
         construirInterfazJuego(jugadores);
     }
 
+    /**
+     * Construye la interfaz del juego: barra superior, tablero y controles visuales.
+     */
     private void construirInterfazJuego(List<Jugador> jugadores) {
         primaryStage.setTitle("MemoriaFX - Juego");
 
@@ -219,7 +211,6 @@ public class MemoriaFX extends Application {
         root.setPadding(new Insets(10));
         root.setBackground(new Background(new BackgroundFill(Color.web("#F9FBE7"), CornerRadii.EMPTY, Insets.EMPTY)));
 
-        // Top bar: muestra jugadores en una fila (no estorba el tablero)
         topBar = new HBox(12);
         topBar.setPadding(new Insets(8));
         topBar.setAlignment(Pos.CENTER_LEFT);
@@ -251,18 +242,32 @@ public class MemoriaFX extends Application {
             topBar.getChildren().add(playerBox);
         }
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        topBar.getChildren().add(spacer);
+        Region leftGap = new Region();
+        HBox.setHgrow(leftGap, Priority.ALWAYS);
 
-        Jugador actual = controller.getJugadorActual();
-        lblEstado = new Label("Turno: " + (actual != null ? actual.getNombre() : ""));
-        lblEstado.setStyle("-fx-font-weight:bold;");
-        topBar.getChildren().add(lblEstado);
+        Region rightGap = new Region();
+        HBox.setHgrow(rightGap, Priority.ALWAYS);
+
+        lblEstado = new Label("Turno: " + (controller.getJugadorActual() != null ? controller.getJugadorActual().getNombre() : ""));
+        lblEstado.setStyle("-fx-font-weight:bold; -fx-font-size:16px;");
+        lblEstado.setAlignment(Pos.CENTER);
+
+        Button btnSalirPartida = new Button("Salir");
+        btnSalirPartida.setStyle("-fx-background-color:#FFCDD2; -fx-font-weight:bold;");
+        btnSalirPartida.setOnAction(e -> {
+            controller = null;
+            endDialogShown = false;
+            try {
+                start(primaryStage);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        topBar.getChildren().addAll(leftGap, lblEstado, rightGap, btnSalirPartida);
 
         root.setTop(topBar);
 
-        // Tablero en el centro
         grid = new GridPane();
         grid.setHgap(6);
         grid.setVgap(6);
@@ -276,7 +281,6 @@ public class MemoriaFX extends Application {
                 b.setPrefSize(CARD_DEFAULT_WIDTH, CARD_DEFAULT_WIDTH * CARD_ASPECT);
                 b.setStyle("-fx-background-color: linear-gradient(to bottom, #ECEFF1, #CFD8DC); -fx-border-color:#90A4AE;");
                 final int fr = r, fc = c;
-                // llamar al método manejarClick (public) para evitar problemas de visibilidad
                 b.setOnAction(ev -> this.manejarClick(fr, fc));
                 b.setOnMouseEntered(ev -> { b.setScaleX(1.04); b.setScaleY(1.04); });
                 b.setOnMouseExited(ev -> { b.setScaleX(1.0); b.setScaleY(1.0); });
@@ -294,22 +298,18 @@ public class MemoriaFX extends Application {
         Scene scene = new Scene(root, 1280, 840);
         primaryStage.setScene(scene);
 
-        // listeners para reajustar tamaño de cartas dinámicamente
         scene.widthProperty().addListener((obs, o, n) -> ajustarTamanoCartas());
         scene.heightProperty().addListener((obs, o, n) -> ajustarTamanoCartas());
 
         primaryStage.show();
 
         refrescarTodo();
-        ajustarTamanoCartas(); // ajuste inicial
+        ajustarTamanoCartas();
     }
 
     /**
-     * Aquí está el método solicitado con la firma idéntica a tu snippet.
-     * Lo dejo public para evitar problemas de resolución desde lambdas o contextos.
-     *
-     * La UI mantiene la responsabilidad de la pausa visual (mostrar la carta antes de evaluar).
-     * La lógica (validaciones, marcar pares, registros) la hace juego() a través del controller.
+     * Maneja el click del usuario en la posición (fila, columna).
+     * La UI muestra la carta y delega la evaluación al controller.
      */
     public void manejarClick(int fila, int columna) {
         if (controller == null || controller.getJuego() == null || controller.getTablero() == null) return;
@@ -319,15 +319,12 @@ public class MemoriaFX extends Application {
 
         int visibles = contarVolteadasNoEmparejadas();
         if (visibles == 0) {
-            // Primer click: invocar al modelo (voltea y registra)
             controller.voltearCarta(fila, columna);
             refrescarTodo();
             actualizarEstado();
             revisarFin();
         } else if (visibles == 1) {
-            // Segundo click: mostrar visualmente la carta inmediatamente,
-            // esperar un instante y luego invocar la lógica del juego para evaluar par.
-            controller.getTablero().voltearCarta(fila, columna); // para que el usuario vea la carta
+            controller.getTablero().voltearCarta(fila, columna);
             refrescarTodo();
 
             PauseTransition pause = new PauseTransition(Duration.millis(700));
@@ -341,6 +338,9 @@ public class MemoriaFX extends Application {
         }
     }
 
+    /**
+     * Cuenta cuántas casillas están volteadas y no emparejadas.
+     */
     private int contarVolteadasNoEmparejadas() {
         int c = 0;
         Tablero tb = controller != null ? controller.getTablero() : null;
@@ -354,7 +354,9 @@ public class MemoriaFX extends Application {
         return c;
     }
 
-    // Ajusta dinámicamente el tamaño de las cartas para que quepan y sean legibles
+    /**
+     * Ajusta el tamaño de los botones/cartas para que se muestren correctamente según la ventana.
+     */
     private void ajustarTamanoCartas() {
         if (grid == null || botones == null || primaryStage == null || primaryStage.getScene() == null) return;
 
@@ -362,7 +364,7 @@ public class MemoriaFX extends Application {
         double sceneH = primaryStage.getScene().getHeight();
 
         double topBarHeight = (topBar != null) ? topBar.getHeight() : 80;
-        double reserved = 40; // padding y margenes
+        double reserved = 40;
         double availableW = Math.max(200, sceneW - reserved);
         double availableH = Math.max(200, sceneH - topBarHeight - reserved);
 
@@ -408,14 +410,16 @@ public class MemoriaFX extends Application {
         });
     }
 
+    /**
+     * Refresca toda la interfaz: botones y estado de jugadores.
+     */
     private void refrescarTodo() {
         if (grid == null || botones == null) return;
         for (int r = 0; r < FILAS; r++) for (int c = 0; c < COLUMNAS; c++) refrescarBoton(r, c);
 
-        // actualizar labels de pares en topBar
         if (topBar != null && controller != null && controller.getJuego() != null) {
             List<Jugador> lista = controller.getJugadores();
-            int offset = 2; // title + separator
+            int offset = 2;
             for (int i = 0; i < lista.size(); i++) {
                 int idx = offset + i;
                 if (idx < topBar.getChildren().size()) {
@@ -445,6 +449,9 @@ public class MemoriaFX extends Application {
         if (controller != null && controller.isTerminado() && !endDialogShown) revisarFin();
     }
 
+    /**
+     * Refresca el botón en la celda (fila, columna) según el estado de la casilla.
+     */
     private void refrescarBoton(int fila, int columna) {
         Button b = botones[fila][columna];
         if (b == null || controller == null) return;
@@ -507,6 +514,9 @@ public class MemoriaFX extends Application {
         }
     }
 
+    /**
+     * Busca el índice del jugador que contiene la carta dada.
+     */
     private int buscarJugadorQueTieneCarta(Carta carta) {
         if (controller == null) return -1;
         List<Jugador> lista = controller.getJugadores();
@@ -516,6 +526,9 @@ public class MemoriaFX extends Application {
         return -1;
     }
 
+    /**
+     * Intenta obtener la imagen asociada a una carta probando varios nombres y rutas.
+     */
     private Image getImageForCarta(Carta carta) {
         if (carta == null) return null;
         int valor = (carta.getValor() == 14) ? 1 : carta.getValor();
@@ -533,6 +546,9 @@ public class MemoriaFX extends Application {
         return null;
     }
 
+    /**
+     * Intenta cargar una imagen desde disco o recursos y la almacena en caché.
+     */
     private Image loadImageFromAnyLocation(String fileName) {
         if (imageCache.containsKey(fileName)) return imageCache.get(fileName);
 
@@ -543,15 +559,12 @@ public class MemoriaFX extends Application {
                     try (FileInputStream fis = new FileInputStream(p.toFile())) {
                         Image img = new Image(fis);
                         imageCache.put(fileName, img);
-                        System.out.println("[MemoriaFX] Imagen cargada desde fichero: " + p.toAbsolutePath());
                         return img;
                     } catch (Exception ex) {
-                        System.out.println("[MemoriaFX] Error leyendo imagen: " + ex.getMessage());
                     }
                 }
             }
         } catch (Exception ex) {
-            // ignore
         }
 
         String resource = "/cardImages/" + fileName;
@@ -559,28 +572,27 @@ public class MemoriaFX extends Application {
             if (is != null) {
                 Image img = new Image(is);
                 imageCache.put(fileName, img);
-                System.out.println("[MemoriaFX] Imagen cargada desde recursos: " + resource);
                 return img;
             }
         } catch (Exception ex) {
-            System.out.println("[MemoriaFX] Error cargando recurso: " + ex.getMessage());
         }
 
         try (InputStream is2 = Thread.currentThread().getContextClassLoader().getResourceAsStream("cardImages/" + fileName)) {
             if (is2 != null) {
                 Image img = new Image(is2);
                 imageCache.put(fileName, img);
-                System.out.println("[MemoriaFX] Imagen cargada desde ClassLoader: cardImages/" + fileName);
                 return img;
             }
         } catch (Exception ex) {
-            System.out.println("[MemoriaFX] Error ClassLoader: " + ex.getMessage());
         }
 
         imageCache.put(fileName, null);
         return null;
     }
 
+    /**
+     * Traduce el enumerado Palo a la parte de nombre usada en los ficheros.
+     */
     private String paloParaFichero(Palo palo) {
         if (palo == null) return "";
         switch (palo) {
@@ -592,6 +604,9 @@ public class MemoriaFX extends Application {
         }
     }
 
+    /**
+     * Revisa si la partida finalizó y muestra el diálogo final si procede.
+     */
     private void revisarFin() {
         if (controller == null) return;
         if (!controller.isTerminado()) return;
@@ -603,6 +618,9 @@ public class MemoriaFX extends Application {
         });
     }
 
+    /**
+     * Muestra el diálogo de fin de partida con opciones y posibilidad de ver pares por jugador.
+     */
     private void showEndGameDialogWithButtons(List<Jugador> ganadores) {
         Stage dialog = new Stage();
         dialog.initOwner(primaryStage);
@@ -655,8 +673,7 @@ public class MemoriaFX extends Application {
     }
 
     /**
-     * Muestra los pares del jugador y permite ordenar la vista.
-     * Opciones de orden: Sin ordenar | Por valor | Por palo
+     * Muestra los pares de un jugador con opción de ordenarlos por valor o palo.
      */
     private void mostrarParesConImagenes(Jugador jugador, String title) {
         Stage dialog = new Stage();
@@ -674,7 +691,6 @@ public class MemoriaFX extends Application {
         top.setAlignment(Pos.CENTER_LEFT);
         top.setPadding(new Insets(8));
 
-        // Combo para ordenar la vista
         ComboBox<String> sortCombo = new ComboBox<>(FXCollections.observableArrayList("Sin ordenar", "Por valor", "Por palo"));
         sortCombo.setValue("Sin ordenar");
         HBox controls = new HBox(12, new Label("Orden:"), sortCombo);
@@ -699,7 +715,7 @@ public class MemoriaFX extends Application {
                 copia.sort(new ComparatorValor());
             } else if ("Por palo".equals(sel)) {
                 copia.sort(new ComparatorPalo());
-            } // "Sin ordenar" deja el orden original (cronológico)
+            }
 
             FlowPane fp = new FlowPane();
             fp.setHgap(12);
@@ -764,12 +780,18 @@ public class MemoriaFX extends Application {
         dialog.showAndWait();
     }
 
+    /**
+     * Actualiza la etiqueta de turno con el jugador actual.
+     */
     private void actualizarEstado() {
         if (lblEstado != null && controller != null && controller.getJugadorActual() != null) {
             lblEstado.setText("Turno: " + controller.getJugadorActual().getNombre());
         }
     }
 
+    /**
+     * Entrada principal para ejecutar la aplicación.
+     */
     public static void main(String[] args) {
         launch(args);
     }
