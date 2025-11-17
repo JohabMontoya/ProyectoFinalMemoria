@@ -1,6 +1,7 @@
 package ClasesMemoria;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Jugador {
@@ -10,7 +11,12 @@ public class Jugador {
 
     public Jugador(String nombre, List<Carta> cartasGanadas) {
         this.nombre = nombre;
-        this.cartasGanadas = cartasGanadas;
+        // copia defensiva y evita nulls
+        if (cartasGanadas == null) {
+            this.cartasGanadas = new ArrayList<>();
+        } else {
+            this.cartasGanadas = new ArrayList<>(cartasGanadas);
+        }
     }
 
     public void registrarPar(Carta c1, Carta c2) {
@@ -25,7 +31,7 @@ public class Jugador {
         return cartasGanadas.size() / 2;
     }
 
-     //Calcula la suma total de valores de todas las cartas ganadas (métrica de desempate).
+    //Calcula la suma total de valores de todas las cartas ganadas (métrica de desempate).
     public int getSumaTotalDeValores() {
         int suma = 0;
         for (Carta carta : cartasGanadas) {
@@ -40,8 +46,11 @@ public class Jugador {
         return nombre;
     }
 
+    /**
+     * Retorna una vista no modificable de las cartas ganadas.
+     */
     public List<Carta> getCartasGanadas() {
-        return cartasGanadas;
+        return Collections.unmodifiableList(cartasGanadas);
     }
 
     @Override
