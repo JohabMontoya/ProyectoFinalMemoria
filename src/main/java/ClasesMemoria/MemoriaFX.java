@@ -1,5 +1,6 @@
 package ClasesMemoria;
 
+import ClasesMemoria.*;
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -44,7 +45,6 @@ public class MemoriaFX extends Application {
     private static final int FILAS = 4;
     private static final int COLUMNAS = 13;
 
-    // Colores por jugador (hasta 4)
     private static final String[] PLAYER_COLORS = {
             "#FFD54F", "#90CAF9", "#A5D6A7", "#EF9A9A"
     };

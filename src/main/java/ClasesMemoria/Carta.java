@@ -12,12 +12,17 @@ public class Carta implements Comparable<Carta> {
 
     }
     // getters/setters
-
-     // Valor usado para comparaciones donde As se considera 14.
+    /**
+     * Valor usado para comparaciones donde As se considera alto (14).
+     */
     public int getValor() {
         return (valor == 1) ? 14 : valor;
     }
 
+    /**
+     * Valor interno/real tal y como fue construido (1..13).
+     * Útil para recrear/copiar la carta exactamente.
+     */
     public int getRawValor() {
         return valor;
     }

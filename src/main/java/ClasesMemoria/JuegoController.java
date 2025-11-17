@@ -2,7 +2,10 @@ package ClasesMemoria;
 
 import java.util.List;
 
-
+/**
+ * JuegoController: capa intermedia entre la UI (MemoriaFX) y el modelo (Baraja, Tablero, JuegoMemoria).
+ * Encapsula la creación/inicio de la partida y expone operaciones simples para la UI.
+ */
 public class JuegoController {
 
     private JuegoMemoria juego;
@@ -13,9 +16,12 @@ public class JuegoController {
         this.tablero = null;
     }
 
-
-     // Crea la Baraja y genera las cartas para el tablero usando una baraja convencional sin repetir cartas.
-
+    /**
+     * Inicia una partida con la modalidad indicada ("Por Valor" o "Por Valor y Color"),
+     * la lista de jugadores y dimensiones del tablero (filas, columnas).
+     *
+     * Crea la Baraja y genera las cartas para el tablero usando una baraja convencional sin repetir cartas.
+     */
     public void iniciarPartida(String modalidad, List<Jugador> jugadores, int filas, int columnas) {
         Baraja baraja = new Baraja();
         int total = filas * columnas;
